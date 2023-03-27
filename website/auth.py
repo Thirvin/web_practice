@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, request, flash, redirect,url_for
+from flask import Blueprint, render_template, request, flash, redirect, url_for
 from .models import User
 from werkzeug.security import generate_password_hash, check_password_hash
 from . import db
@@ -8,8 +8,19 @@ auth = Blueprint('auth', __name__)
 
 @auth.route("/login", methods=['GET', 'POST'])
 def login():
-    data = request.form
-    print(data)
+    if request.method == 'POST':
+        data = request.form
+        email = data.get('email')
+        password = data.get('password')
+
+    user = User.query.filter_by(email=email).first()
+    if user:
+        if check_password_hash(user.password, password):
+            flash("Logged in successfully", category="sucess")
+        else:
+            flash("Incorrect password", category='error')
+    else:
+        flash("Email not exsist", category='error')
     return render_template("login.html")
 
 
@@ -31,13 +42,21 @@ def register():
         elif len(firstName) < 2:
             flash("First name must be more than 1 characters", category="error")
         elif len(password1) < 7:
-            flash("Password is too short.\nPassword must be more than 7 characters", category="error")
+            flash(
+                "Password is too short.\nPassword must be more than 7 characters", category="error")
         elif password1 != password2:
             flash("Passwords don't match", category="error")
         else:
-            new_user =  User(email = email,password = generate_password_hash(password1,method="sha256"),first_name = firstName)
-            flash("Account created successfully", category="success")
+            if User.query.filter_by(email=email).first():
+                flash("User is already exsisted", category="error")
+                return render_template("sigh-up.html")
+
+            new_user = User(email=email, password=generate_password_hash(
+                password1, method="sha256"), first_name=firstName)
             db.session.add(new_user)
             db.session.commit()
+
+            flash("Account created successfully", category="success")
             return redirect(url_for('view.home'))
+
     return render_template("sigh-up.html")
