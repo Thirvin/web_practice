@@ -13,14 +13,14 @@ def login():
         email = data.get('email')
         password = data.get('password')
 
-    user = User.query.filter_by(email=email).first()
-    if user:
-        if check_password_hash(user.password, password):
-            flash("Logged in successfully", category="sucess")
+        user = User.query.filter_by(email=email).first()
+        if user:
+            if check_password_hash(user.password, password):
+                flash("Logged in successfully", category="success")
+            else:
+                flash("Incorrect password", category='error')
         else:
-            flash("Incorrect password", category='error')
-    else:
-        flash("Email not exsist", category='error')
+            flash("Email not exsist", category='error')
     return render_template("login.html")
 
 
