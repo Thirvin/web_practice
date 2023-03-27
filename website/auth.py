@@ -2,7 +2,7 @@ from flask import Blueprint, render_template, request, flash, redirect, url_for
 from .models import User
 from werkzeug.security import generate_password_hash, check_password_hash
 from . import db
-
+from flask_login import login_user, login_required, logout_user, current_user
 auth = Blueprint('auth', __name__)
 
 
@@ -17,16 +17,21 @@ def login():
         if user:
             if check_password_hash(user.password, password):
                 flash("Logged in successfully", category="success")
+                login_user(user,remember=True)
+
+                return redirect(url_for('view.home'))
             else:
                 flash("Incorrect password", category='error')
         else:
             flash("Email not exsist", category='error')
-    return render_template("login.html")
+    return render_template("login.html",user = current_user)
 
 
 @auth.route("/logout")
+@login_required
 def logout():
-    return render_template("logout.html")
+    logout_user()
+    return render_template("logout.html",user = current_user)
 
 
 @auth.route("/sigh-up", methods=['GET', 'POST'])
@@ -47,16 +52,18 @@ def register():
         elif password1 != password2:
             flash("Passwords don't match", category="error")
         else:
+
             if User.query.filter_by(email=email).first():
                 flash("User is already exsisted", category="error")
                 return render_template("sigh-up.html")
 
             new_user = User(email=email, password=generate_password_hash(
                 password1, method="sha256"), first_name=firstName)
+            login_user(new_user)
             db.session.add(new_user)
             db.session.commit()
 
             flash("Account created successfully", category="success")
             return redirect(url_for('view.home'))
 
-    return render_template("sigh-up.html")
+    return render_template("sigh-up.html",user = current_user)
